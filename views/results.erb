@@ -1,0 +1,11 @@
+<%# Todo: 解决这里返回的列表是无序的问题 %>
+<table class='table table-hover table-striped'>
+  <% @choice.each do |id, text| %> 
+    <tr>
+      <th><%= text %></th>
+      <td><%= @vote_counts[id] || 0 %>
+      <td><%= '#' * (@vote_counts[id] || 0) %></td>
+    </tr>
+  <% end %>
+</table>
+<p><a href='/vote' class="text-success">Cast more votes!</a></p>

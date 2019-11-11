@@ -1,0 +1,13 @@
+
+<p>What's for dinner?</p>
+<form action='vote/cast' method='post'>
+  <ul class='unstyled'>
+    <% @choice.each_with_index do |item, index| %>
+      <label class='radio'>
+        <input type='radio' name='vote' value='<%= item.key %>' id='vote_<%= index+1 %>' />
+        <%= item.value %>
+      </label>
+    <% end %>
+  </ul>
+  <button type='submit' class='btn btn-primary'>Cast this vote!</button>
+</form>

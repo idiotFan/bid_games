@@ -1,0 +1,49 @@
+<div class='mb-4'>
+  <h3>当前正在进行中的游戏</h3>
+</div>
+
+<table class='table table-hover table-striped table-condensed'>
+  <% @biding_game.each do |bid_game| %> 
+    <tr>
+      <th>游戏名</th>
+      <th>标的&简介</th>
+      <th>创建者</th>
+      <th>创建时间</th>
+      <th></th>
+    </tr>
+    <tr>
+      <th><%= bid_game.name %></th>
+      <td><%= bid_game.game_info %></td>
+      <td><%= User.where(id: bid_game.opened_by).first.username %></td>
+      <td><%= bid_game.created_at %></td>
+      <td><a class='btn btn-info btn-xs' role='button' href='/bid_games/<%= bid_game.id %>'>进入</a></td>
+    </tr>
+  <% end %>
+</table>
+
+<div class='mb-4'>
+  <h3>或者，自己创建一局游戏？</h3>
+</div>
+<form action='/bid_games/create' method='post'>
+  <ul class='unstyled'>
+    <label class='radio'>
+      <input type='radio' name='game_type' value='SINGLE_MIN' id='single_min_game' checked />
+      最小单独出价
+    </label>
+    <label class='radio'>
+      <input type='radio' name='game_type' value='OTHER' id='single_min_game' disabled/>
+      下一款游戏开发中，期待一下~
+    </label>
+  </ul>
+
+  <div id='game_info_inputs' class='form-group'>
+      <input type='text' name='game_name' class='form-control' placeholder="游戏标题（可以不填）" />
+      <br />
+      <textarea type='textarea' name='game_info' class='form-control' placeholder='你的游戏标的和主题是？' autofocus required ></textarea>
+      <br />
+      <input type='text' name='max_player_number' class='form-control' placeholder="最多参与人数，不填则默认为10（达到人数游戏则会自动结束游戏）" />
+      <br />
+      <input type='text' name='single_bid_fee' class='form-control' placeholder="单次下注花费金额，不填则默认1元/次" />
+  </div>
+  <button type='submit' class='btn btn-primary btn-lg'>创建游戏！</button>
+</form>

@@ -1,0 +1,111 @@
+<h3>本场游戏概况</h3>
+<table class='table table-hover table-striped'>
+  <tr>
+    <th>状态</th>
+    <td><%= @current_game.status %></td>
+  </tr>
+  <tr>
+    <th>当前参与人数</th>
+    <td><%= @game_join_users.count %></td>
+  </tr>
+  <tr>
+    <th>最多参与人数（达到则会自动完成）</th>
+    <td><%= @current_game.maximum_player_num %></td>
+  </tr>
+  <tr>
+    <th>创建者</th>
+    <td><%= @game_opened_by.username%></td>
+  </tr>
+  <tr>
+    <th>创建时间</th>
+    <td><%= @current_game.created_at %></td>
+  </tr>
+  <tr>
+    <th>详细信息</th>
+    <td><%= @current_game.game_info %></td>
+  </tr>
+  <tr>
+    <th>单次投注金额</th>
+    <td><%= @current_game.single_bid_fee %></td>
+  </tr>
+  <% if @current_game.status == 2 then %>
+    <tr class='success'>
+      <th><strong>最终单一最小值</strong></th>
+      <% if @atari then %>
+        <td><strong><%= @atari.submitted_value %></strong></td>
+      <% else %>
+        <td><strong>无</strong></td>
+      <% end %>
+    </tr>
+    <tr class='success'>
+      <th><strong>最终赢家</strong></th>
+      <% if @final_winner then %>
+        <td><strong><%= @final_winner.username %></strong></td>
+      <% else %>
+        <td><strong>无</strong></td>
+      <% end %>
+    </tr>
+  <% end %>
+</table>
+<% if @current_user && @current_user.id == @current_game.opened_by.to_i && @current_game.status == 1 then %>
+  <a id='direct_complete_game' class='btn btn-default' role='button' href='/bid_games/<%= @current_game.id %>/finish'>直接完结</a>
+<% end %>
+
+
+<h3>你的投注记录</h3>
+<% if @current_user then %>
+
+  <% if @current_user_join_records.count > 0 then %>
+      <table class='table table-hover table-bordered table-condensed'>
+        <tr>
+          <th>投注值</th>
+          <th>投注时间</th>
+        </tr>
+        <% @current_user_join_records.each do |record|%>
+        <tr>
+          <td><%= record.submitted_value%></td>
+          <td><%= record.created_at %></td>
+        </tr>
+        <% end %>
+      </table>
+  <% else %>
+    <p class='text-muted'>当前你还未参与这个游戏哦~ 快去投注吧</p>
+  <% end %>
+<% else %>
+  <p class='text-muted'>当前未登录账号，登录之后可以查看你对这局游戏的投注记录哦~</p>
+<% end %>
+
+<h3>所有投注记录</h3>
+<% if @current_game.status == 2 then %>
+  <table class='table table-hover table-bordered table-condensed'>
+    <tr>
+      <th>投注值</th>
+      <th>投注用户</th>
+      <th>投注时间</th>
+    </tr>
+    <% @game_join_records.each do |record|%>
+    <tr>
+      <td><%= record.submitted_value %></td>
+      <td><%= User.where(id: record.submitted_by).first.username %></td>
+      <td><%= record.created_at %></td>
+    </tr>
+    <% end %>
+  </table>
+<% else %>  
+  <p class='text-info'>最小唯一数游戏在结果揭晓之前是不公布所有人的投注结果的哦~ 游戏结束之后可以查看</p>
+<% end %> 
+
+<% if @current_game.status == 1 then%>
+  <h3>参与投注</h3>
+  <div>
+      <form id='bid_form' action='/bid_games/<%= @current_game.id %>/join' method='post'>
+        <div class='form-group'>
+          <p id='single_min_descyption' class='text-info'>注：最小唯一数需要你为有可能成为最小的唯一金额投注，你可以投多个，但是每个值会收取一份投注金额</p>
+          <p id='single_min_descyption' class='text-warning'>注2：只能是整数哦~</p>
+          <input id='bid_values' type='text' class='form-control' name='bid_values' required placeholder='请输入你要投注的金额的值，多个值请用英文逗号隔开'>
+          <!-- <label id='eva_fee' for='bid_values' >投注几次：N次；花费投注金额：；</label> -->
+        </div>
+        <button id='bid_button' type='submit' class='btn btn-primary'>确定投注</button>
+      </form>
+  </div>
+<% end %> 
