@@ -106,8 +106,8 @@ post '/bid_games/create' do
     @title = params[:game_info]
     @game_info = params[:game_info]
     @game_name = params[:game_name]
-    @player_num = params[:max_player_number] == ''? params[:max_player_number] : 10
-    @bid_fee = params[:single_bid_fee] == ''? params[:single_bid_fee] : 1
+    @player_num = params[:max_player_number]
+    @bid_fee = params[:single_bid_fee]
     @game_type = params[:game_type]
     @current_game = {}
     @game_opened_by = User.where(id: session['current_user']).first
