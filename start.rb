@@ -19,6 +19,7 @@ require_all 'utils'
 enable :sessions
 set :bind, '0.0.0.0'
 
+
 get '/' do 
     redirect '/bid_games' 
 end
@@ -39,7 +40,8 @@ post '/vote/cast' do
         @vote = Vote.new(voted_key: @vote_key, voted_by: session['current_user'], created_at: Time.now, updated_at: Time.now).save
 
         erb :cast
-    else redirect '/login'
+    else 
+        redirect '/login'
     end
   else 
     @title = "请选择一个选项！"
@@ -83,7 +85,7 @@ get '/bid_games/:game_id' do
 
     @current_user = User.where(id: session['current_user']).first
     if @current_user then 
-        @current_user_join_records = SingleMinSubmit.where(bid_game_id: params[:game_id], submitted_by: @current_user.id).order(:created_at).reverse
+        @current_user_join_records = SingleMinSubmit.where(bid_game_id: params[:game_id], submitted_by: @current_user.id).order(:submitted_value)
     end
 
     # 如果游戏是结束状态，渲染一些额外的东西
@@ -113,8 +115,9 @@ post '/bid_games/create' do
     #判定是否正常登录
     if @game_opened_by then 
         @current_game = BidGame.new(type: @game_type, name: @game_name, game_info: @game_info, maximum_player_num: @player_num, single_bid_fee: @bid_fee, opened_by: @game_opened_by.id).game_start.save
-
-    else redirect '/login'
+    else 
+        session['redirect_to'] = "/bid_games"
+        redirect '/login'
     end
     
     # "You have created a #{@player_num} people palying game to play #{@game_info} ！Everyone would pay #{@bid_fee} to play once."
@@ -140,6 +143,7 @@ post '/bid_games/:game_id/join' do
             @current_game.game_close.save
         end
     elsif !@current_user then
+        session['redirect_to'] = "/bid_games/#{@current_game.id}"
         redirect '/login'
     elsif @current_game.status == 2 then
         "遗憾，游戏已经结束啦"
@@ -156,6 +160,7 @@ get '/bid_games/:game_id/finish' do
     @current_game = BidGame.where(id: params[:game_id]).first
 
     if !@current_user then
+        session['redirect_to'] = "/bid_games/#{@current_game.id}"
         redirect '/login'
     elsif @current_user.id == @current_game.opened_by.to_i && @current_game.status == 1 then 
         @current_game.game_close.save
@@ -181,8 +186,9 @@ post '/login_anyway' do
     if auth_result[:login_user] then 
         # REVIEW 写入到session里面去，不过如果一旦服务器重启就断线了
         session['current_user'] = auth_result[:login_user].id
-        # TODO 都会跳回首页，太傻了，需要改造 
-        redirect '/'
+
+        # REVIEW 跳回事先已经存储好的需要跳回的链接
+        redirect session['redirect_to'] || '/'
     else
         logger.info auth_result 
         auth_result.to_json
