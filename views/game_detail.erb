@@ -2,18 +2,28 @@
 <table class='table table-hover table-striped'>
   <tr>
     <th>状态</th>
-    <td><%= @current_game.status %></td>
+    <td><%= Status[@current_game.status] %></td>
   </tr>
-  <tr>
-    <th>当前参与人数</th>
+
+  <!--<tr>
+    <th>当前投注人数</th>
     <td><%= @game_join_users.count %></td>
   </tr>
   <tr>
-    <th>最多参与人数（达到则会自动完成）</th>
+    <th>最多投注人数（达到或超过则会自动完成）</th>
     <td><%= @current_game.maximum_player_num %></td>
+  </tr> -->
+
+  <tr>
+    <th>当前投注次数</th>
+    <td><%= @game_join_records.count %></td>
   </tr>
   <tr>
-    <th>创建者</th>
+    <th>最多投注次数（达到或超过则会自动完成）</th>
+    <td><%= @current_game.max_bid_num %></td>
+  </tr>
+  <tr>
+    <th>庄家</th>
     <td><%= @game_opened_by.username%></td>
   </tr>
   <tr>
@@ -56,18 +66,19 @@
 <% if @current_user then %>
 
   <% if @current_user_join_records.count > 0 then %>
-      <table class='table table-hover table-bordered table-condensed'>
-        <tr>
-          <th>投注值</th>
-          <th>投注时间</th>
-        </tr>
-        <% @current_user_join_records.each do |record|%>
-        <tr>
-          <td><%= record.submitted_value%></td>
-          <td><%= record.created_at %></td>
-        </tr>
-        <% end %>
-      </table>
+    <p class='text-muted'>你总共投注<%= @current_user_join_records.count%>次，需要支付<%= @current_user_join_records.count * @current_game.single_bid_fee.to_d %>给庄家</p>
+    <table class='table table-hover table-bordered table-condensed'>
+      <tr>
+        <th>投注值</th>
+        <th>投注时间</th>
+      </tr>
+      <% @current_user_join_records.each do |record|%>
+      <tr>
+        <td><%= record.submitted_value%></td>
+        <td><%= record.created_at %></td>
+      </tr>
+      <% end %>
+    </table>
   <% else %>
     <p class='text-muted'>当前你还未参与这个游戏哦~ 快去投注吧</p>
   <% end %>
@@ -95,8 +106,10 @@
   <p class='text-info'>最小唯一数游戏在结果揭晓之前是不公布所有人的投注结果的哦~ 游戏结束之后可以查看</p>
 <% end %> 
 
-<% if @current_game.status == 1 then%>
-  <h3>参与投注</h3>
+<h3>参与投注</h3>
+<% if @current_user && @current_user.id == @current_game.opened_by.to_i then%>
+  <p class='text-info'>庄家不可以参与投注哈~~</p>
+<% elsif @current_user && @current_game.status == 1 then%>
   <div>
       <form id='bid_form' action='/bid_games/<%= @current_game.id %>/join' method='post'>
         <div class='form-group'>
@@ -108,4 +121,10 @@
         <button id='bid_button' type='submit' class='btn btn-primary'>确定投注</button>
       </form>
   </div>
+<% elsif !@current_user then%>
+  <p class='text-info'>登录之后可以投注，庄家不可以参与投注哈~~</p>
+  <a id='login_button' class='btn btn-default' role='button' href='/login' >登录/注册你的账号</a>
+<% elsif @current_game.status == 2 then%>
+  <p class='text-info'>遗憾，游戏已经结束啦~~</p>
+  <a id='login_button' class='btn btn-default' role='button' href='/' >参加更多进行中的游戏</a>
 <% end %> 

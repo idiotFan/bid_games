@@ -1,13 +1,13 @@
 require 'sinatra'
 require 'awesome_print'
-require 'kaminari' 
-require 'aasm'
+# require 'kaminari' 
+# require 'aasm'
 require 'require_all'
 require 'json' # so that can directly use Hash.to_json 
 
 # build open hashes，不过Benchmark表示性能与Struct相比非常差，所以不建议用
-require 'ostruct'
-require 'recursive-open-struct'
+# require 'ostruct'
+# require 'recursive-open-struct'
 
 require_all 'db'
 require_all 'models'
@@ -66,19 +66,24 @@ end
 
 get '/bid_games/archived' do 
     @title = "已经结束的游戏"
-    @biding_game = BidGame.where(status: 1, deleted: 0)
+    @biding_game = BidGame.where(status: 2, deleted: 0)
     erb :bid_games
 end
 
 
 # 渲染游戏详情页
 get '/bid_games/:game_id' do 
+    Status = {
+        1 => '进行中',
+        2 => '已结束'
+    }
+        
     @current_game = BidGame.where(id: params[:game_id]).first
     if !@current_game then 
-        redirect '/404'
+        redirect '/bid_games'
         break
     end 
-    @game_join_records = SingleMinSubmit.where(bid_game_id: params[:game_id]).order(:submitted_value)
+    @game_join_records = SingleMinSubmit.where(bid_game_id: params[:game_id], deleted: 0).order(:submitted_value)
     @game_join_users = SingleMinSubmit.group_and_count(:bid_game_id, :submitted_by).having(bid_game_id: @current_game.id)
     @game_opened_by = User.where(id: @current_game.opened_by).first
     @title = @current_game.name
@@ -88,13 +93,11 @@ get '/bid_games/:game_id' do
         @current_user_join_records = SingleMinSubmit.where(bid_game_id: params[:game_id], submitted_by: @current_user.id).order(:submitted_value)
     end
 
-    # 如果游戏是结束状态，渲染一些额外的东西
-    if @current_game.status == 2 then 
-        @atari =SingleMinSubmit.where(bid_game_id: params[:game_id]).group_and_count(:submitted_value).having(count: 1).first
-        if @atari then 
-            @final_winner_submit = SingleMinSubmit.where(submitted_value: @atari.submitted_value).first
-            @final_winner = User.where(id: @final_winner_submit.submitted_by).first
-        end
+    # 如果游戏是结束状态，可以提取最新的当前结果
+    @atari =SingleMinSubmit.where(bid_game_id: params[:game_id]).group_and_count(:submitted_value).having(count: 1).first
+    if @atari then 
+        @final_winner_submit = SingleMinSubmit.where(bid_game_id: params[:game_id], submitted_value: @atari.submitted_value).first
+        @final_winner = User.where(id: @final_winner_submit.submitted_by).first
     end
 
     erb :game_detail
@@ -107,6 +110,7 @@ post '/bid_games/create' do
     @game_info = params[:game_info]
     @game_name = params[:game_name]
     @player_num = params[:max_player_number]
+    @max_bid_num = params[:max_bid_num]
     @bid_fee = params[:single_bid_fee]
     @game_type = params[:game_type]
     @current_game = {}
@@ -114,7 +118,8 @@ post '/bid_games/create' do
     
     #判定是否正常登录
     if @game_opened_by then 
-        @current_game = BidGame.new(type: @game_type, name: @game_name, game_info: @game_info, maximum_player_num: @player_num, single_bid_fee: @bid_fee, opened_by: @game_opened_by.id).game_start.save
+        #创建游戏 
+        @current_game = BidGame.new(type: @game_type, name: @game_name, game_info: @game_info, maximum_player_num: @player_num, max_bid_num: @max_bid_num, single_bid_fee: @bid_fee, opened_by: @game_opened_by.id).game_start.save
     else 
         session['redirect_to'] = "/bid_games"
         redirect '/login'
@@ -134,14 +139,25 @@ post '/bid_games/:game_id/join' do
     @bid_values = params[:bid_values].split(',')
     if @current_user && @current_game.status == 1 then 
         @bid_values.each_with_index do |value, index|
-            @bid_submit = SingleMinSubmit.new(bid_game_id: @current_game.id, submitted_value: value, submitted_by: @current_user.id).save
+            # 这里需要校验用户是否已经投过这个值，如果已经投过就自动过滤
+            @whether_sumitted = SingleMinSubmit.where(bid_game_id: @current_game.id, submitted_by: @current_user.id,  submitted_value: value, deleted: 0).first
+            if !@whether_sumitted then 
+                @bid_submit = SingleMinSubmit.new(bid_game_id: @current_game.id, submitted_value: value, submitted_by: @current_user.id).save
+            end
         end
 
-        # 重新获取一下单场游戏的参与人数
+        # 触发达到人数就自动结束的逻辑
         @game_join_users = SingleMinSubmit.group_and_count(:bid_game_id, :submitted_by).having(bid_game_id: @current_game.id)
-        if  @current_game.maximum_player_num <= @game_join_users.count then
+        if  @current_game.maximum_player_num && @current_game.maximum_player_num <= @game_join_users.count then
             @current_game.game_close.save
         end
+
+        # 触发达到投注次数就自动结束的逻辑
+        @game_bid_num = SingleMinSubmit.where(bid_game_id: @current_game.id).count(:id)
+        if  @current_game.max_bid_num && @current_game.max_bid_num <= @game_bid_num then
+            @current_game.game_close.save
+        end
+
     elsif !@current_user then
         session['redirect_to'] = "/bid_games/#{@current_game.id}"
         redirect '/login'
@@ -153,7 +169,7 @@ post '/bid_games/:game_id/join' do
 end
 
 
-# 开局者直接结束这个游戏
+# 创建者/庄家直接结束这个游戏
 get '/bid_games/:game_id/finish' do 
     @current_user = User.where(id: session['current_user']).first
 
@@ -187,7 +203,7 @@ post '/login_anyway' do
         # REVIEW 写入到session里面去，不过如果一旦服务器重启就断线了
         session['current_user'] = auth_result[:login_user].id
 
-        # REVIEW 跳回事先已经存储好的需要跳回的链接
+        # REVIEW 跳回事先已经存储好的需要跳回的链接，如果没有就去首页
         redirect session['redirect_to'] || '/'
     else
         logger.info auth_result 

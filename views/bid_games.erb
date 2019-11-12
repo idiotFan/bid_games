@@ -41,9 +41,9 @@
       <br />
       <textarea type='textarea' name='game_info' class='form-control' placeholder='你的游戏标的和主题是？' autofocus required ></textarea>
       <br />
-      <input type='text' name='max_player_number' class='form-control' placeholder="最多参与人数，不填则默认为10（达到人数游戏则会自动结束游戏）" />
+      <input type='text' name='max_bid_num' class='form-control' required placeholder="最多投注次数（达到次数游戏则会自动结束游戏）" />
       <br />
-      <input type='text' name='single_bid_fee' class='form-control' placeholder="单次下注花费金额，不填则默认1元/次" />
+      <input type='text' name='single_bid_fee' class='form-control' required placeholder="单次下注花费金额" />
   </div>
   <button type='submit' class='btn btn-primary btn-lg'>创建游戏！</button>
 </form>
