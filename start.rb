@@ -1,5 +1,4 @@
 require 'sinatra'
-require 'awesome_print'
 require 'sinatra/reloader'
 require 'sinatra/namespace'
 
@@ -23,7 +22,7 @@ enable :sessions
 set :bind, '0.0.0.0'
 
 # 将server绑定到80端口上，以便能够直接访问
-# set :port, 80
+set :port, 8080
 
 register Sinatra::Reloader
 
