@@ -1,5 +1,8 @@
 require 'sinatra'
 require 'awesome_print'
+require 'sinatra/reloader'
+require 'sinatra/namespace'
+
 # require 'kaminari' 
 # require 'aasm'
 require 'require_all'
@@ -18,6 +21,11 @@ require_all 'utils'
 #开启Sinatra的Session功能
 enable :sessions
 set :bind, '0.0.0.0'
+
+# 将server绑定到80端口上，以便能够直接访问
+# set :port, 80
+
+register Sinatra::Reloader
 
 
 get '/' do 
@@ -214,30 +222,32 @@ end
 
 #-----------------用API的方式来实现操作votes--------------------
 
-post '/api/v1/get_token' do
+namespace '/api/v1' do
+    post '/get_token' do
 
-end
-
-
-get '/api/v1/votes' do
-    content_type :json
-    # status 201 #直接设定返回状态
-    # json = VoteSerializer.new(Vote.all,{ fields:{ vote:[:voted_key] } }).serialized_json
-    # json = VoteSerializer.new(Vote.select(:voted_by, :voted_key, :created_at).all).serialized_json
-    # json = VoteSerializer.new(Vote.all).serialized_json
-    res = {code: 200, data: {votes:{}}}
-    res[:data][:votes] = Vote.select(:voted_by, :voted_key, :created_at)
-    res = res.to_json
-end
-
-
-post '/api/v1/login_anyway' do
-    content_type :json
-    # json = VoteSerializer.new(Vote.all,{ fields:{ vote:[:voted_key] } }).serialized_json
-    # json = VoteSerializer.new(Vote.select(:voted_by, :voted_key, :created_at).all).serialized_json
-    # json = VoteSerializer.new(Vote.all).serialized_json
-    res = {code: 200, data: {votes:{}}}
-    res[:data][:votes] = Vote.select(:voted_by, :voted_key, :created_at)
-    res = res.to_json
+    end
+    
+    
+    get '/votes' do
+        content_type :json
+        # status 201 #直接设定返回状态
+        # json = VoteSerializer.new(Vote.all,{ fields:{ vote:[:voted_key] } }).serialized_json
+        # json = VoteSerializer.new(Vote.select(:voted_by, :voted_key, :created_at).all).serialized_json
+        # json = VoteSerializer.new(Vote.all).serialized_json
+        res = {code: 200, data: {votes:{}}}
+        res[:data][:votes] = Vote.select(:voted_by, :voted_key, :created_at)
+        res = res.to_json
+    end
+    
+    
+    post '/login_anyway' do
+        content_type :json
+        # json = VoteSerializer.new(Vote.all,{ fields:{ vote:[:voted_key] } }).serialized_json
+        # json = VoteSerializer.new(Vote.select(:voted_by, :voted_key, :created_at).all).serialized_json
+        # json = VoteSerializer.new(Vote.all).serialized_json
+        res = {code: 200, data: {votes:{}}}
+        res[:data][:votes] = Vote.select(:voted_by, :voted_key, :created_at)
+        res = res.to_json
+    end    
 end
 

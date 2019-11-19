@@ -5,9 +5,9 @@ require 'logger'
 DB = Sequel.connect(
     adapter: 'mysql2', 
     database: 'flyinggo', 
-    user: '', 
+    user: 'root', 
     password: '', 
-    host: '', 
+    host: 'localhost', 
     port: 3306, 
     loggers: [Logger.new($stdout)])
 
