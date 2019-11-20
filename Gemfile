@@ -1,0 +1,12 @@
+source 'https://gems.ruby-china.com/'
+
+gem 'sinatra'
+gem 'sinatra'
+gem 'sinatra-reloader'
+gem 'sinatra-contrib'
+gem 'sinatra-namespace'
+gem 'require_all'
+gem 'json'
+gem 'sequel'
+gem 'mysql2'
+gem 'logger'
