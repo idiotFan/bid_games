@@ -11,4 +11,6 @@ DB = Sequel.connect(
     port: 3306, 
     loggers: [Logger.new($stdout)])
 
+Sequel.split_symbols = true
+
 DB.loggers << Logger.new($stdout)

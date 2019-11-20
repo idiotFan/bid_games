@@ -97,7 +97,7 @@
     <% @game_join_records.each do |record|%>
     <tr>
       <td><%= record.submitted_value %></td>
-      <td><%= User.where(id: record.submitted_by).first.username %></td>
+      <td><%= record[:username] %></td>
       <td><%= record.created_at %></td>
     </tr>
     <% end %>
@@ -114,7 +114,7 @@
       <form id='bid_form' action='/bid_games/<%= @current_game.id %>/join' method='post'>
         <div class='form-group'>
           <p id='single_min_descyption' class='text-info'>注：最小唯一数需要你为有可能成为最小的唯一金额投注，你可以投多个，但是每个值会收取一份投注金额</p>
-          <p id='single_min_descyption' class='text-warning'>注2：只能是整数哦~</p>
+          <p id='single_min_descyption' class='text-warning'>注2：只能是整数哦~ 不用担心重复输入，我会自动帮你过滤掉你重复输入的值。</p>
           <input id='bid_values' type='text' class='form-control' name='bid_values' required placeholder='请输入你要投注的金额的值，多个值请用英文逗号隔开'>
           <!-- <label id='eva_fee' for='bid_values' >投注几次：N次；花费投注金额：；</label> -->
         </div>

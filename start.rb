@@ -66,7 +66,7 @@ end
 
 # 游戏首页，展示所有游戏和直接开一局游戏
 get '/bid_games' do 
-    @title = "想玩哪一个Bid游戏呢？"
+    @title = "Bid游戏厅"
     @biding_game = BidGame.where(status: 1, deleted: 0)
     erb :bid_games
 end
@@ -90,8 +90,11 @@ get '/bid_games/:game_id' do
         redirect '/bid_games'
         break
     end 
-    @game_join_records = SingleMinSubmit.where(bid_game_id: params[:game_id], deleted: 0).order(:submitted_value)
+    
+    @game_join_records = SingleMinSubmit.where(bid_game_id: params[:game_id]).left_join(:user, id: :submitted_by).select{[submitted_value, submitted_by, user__username]}.order(:submitted_value)
+    
     @game_join_users = SingleMinSubmit.group_and_count(:bid_game_id, :submitted_by).having(bid_game_id: @current_game.id)
+
     @game_opened_by = User.where(id: @current_game.opened_by).first
     @title = @current_game.name
 
@@ -100,7 +103,7 @@ get '/bid_games/:game_id' do
         @current_user_join_records = SingleMinSubmit.where(bid_game_id: params[:game_id], submitted_by: @current_user.id).order(:submitted_value)
     end
 
-    # 如果游戏是结束状态，可以提取最新的当前结果
+    # 如果游戏是结束状态，返回最新的当前结果
     @atari =SingleMinSubmit.where(bid_game_id: params[:game_id]).group_and_count(:submitted_value).having(count: 1).first
     if @atari then 
         @final_winner_submit = SingleMinSubmit.where(bid_game_id: params[:game_id], submitted_value: @atari.submitted_value).first

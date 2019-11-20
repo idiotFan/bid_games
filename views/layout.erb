@@ -6,14 +6,19 @@
     <title>CW TOYS</title>
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 引入Element样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
 
   </head>
-  <body class='container '>
-    <div class='text-center'>
-      <h1><%= @title %></h1>
+  <body>
+    <div id='app' class='container-fluid'>
+      <div class='text-center'>
+        <h1><%= @title %></h1>
+        {{message}}
+      </div>
+      <hr />
+      <%= yield %>
     </div>
-    <hr />
-    <%= yield %>
 
     <!-- jQuery (Bootstrap 的所有 JavaScript 插件都依赖 jQuery，所以必须放在前边) -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
@@ -21,5 +26,23 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
     <!-- 开发环境版本，包含了有帮助的命令行警告 -->
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> 
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+    <script>
+      var app = new Vue({
+        el: '#app',
+        data: {
+          message: 'Hello Vue!'
+        }
+      })
+
+      var login_form = new Vue({
+        el: '#login_form',
+        data: {
+          message: 'Hello Vue!'
+        }
+      })
+    </script>
   </body>
 </html>
