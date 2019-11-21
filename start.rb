@@ -200,8 +200,9 @@ end
 
 
 # 登录页面
-get '/login' do
+get '/login/:redirect_back' do
     @title = "请登录/注册你的账号"
+    session['redirect_to'] = '/bid_games/'+params[:redirect_back]
     erb :login
 end 
 

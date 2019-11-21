@@ -1,9 +1,12 @@
-<div id='login_form' class='col-md-4 container'>
+<div id='login_form' class='container text-center'>
     <form action='/login_anyway' method='post'>
-            <input type='text' name='username' class='form-control' placeholder="用户名/邮箱/手机号" autofocus required>
+        <div class='form-group'>
+            <input type='text' name='username' class='form-control' placeholder="用户名（你是哪位）" autofocus required>
             <br />
-            <input type='password' name='password' class='form-control' placeholder="密码" required>
+            <input type='password' name='password' class='form-control' placeholder="密码（会给你加密存储的）" required>
             <br />
-            <button type='submit' class='btn btn-primary btn-lg btn-block'>登录账号</button>
+        </div>
+        <p class='text-info'>登录/注册成功之后会回到原来的页面~不成功会爆炸你信不信</p>
+        <button type='submit' class='btn btn-primary btn-lg btn-block'>登录账号（新账号则会自动注册）</button>
     </form>
 </div>

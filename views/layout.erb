@@ -14,7 +14,7 @@
     <div id='app' class='container-fluid'>
       <div class='text-center'>
         <h1><%= @title %></h1>
-        {{message}}
+        <%# {{message}} %>
       </div>
       <hr />
       <%= yield %>
@@ -33,7 +33,7 @@
       var app = new Vue({
         el: '#app',
         data: {
-          message: 'Hello Vue!'
+          message: 'Hello， '+ sessionStorage.getItem('current_user')
         }
       })
 
