@@ -146,13 +146,13 @@ post '/bid_games/:game_id/join' do
     # 'Thanks for your bids!'
     @current_user = User.where(id: session['current_user']).first
     @current_game = BidGame.where(id: params[:game_id]).first
-    @bid_values = params[:bid_values].split(',')
+    @bid_values = params[:bid_values].split(',') - ['0']
     if @current_user && @current_game.status == 1 then 
         @bid_values.each_with_index do |value, index|
             # 这里需要校验用户是否已经投过这个值，如果已经投过就自动过滤
             @whether_sumitted = SingleMinSubmit.where(bid_game_id: @current_game.id, submitted_by: @current_user.id,  submitted_value: value, deleted: 0).first
             if !@whether_sumitted then 
-                @bid_submit = SingleMinSubmit.new(bid_game_id: @current_game.id, submitted_value: value, submitted_by: @current_user.id).save
+                @bid_submit = SingleMinSubmit.new(bid_game_id: @current_game.id, submitted_value: value, submitted_by: @current_user.id).save 
             end
         end
 
@@ -179,7 +179,7 @@ post '/bid_games/:game_id/join' do
 end
 
 
-# 创建者/庄家直接结束这个游戏
+# 创建者/庄家 直接结束这个游戏
 get '/bid_games/:game_id/finish' do 
     @current_user = User.where(id: session['current_user']).first
 
