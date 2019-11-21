@@ -91,7 +91,7 @@ get '/bid_games/:game_id' do
         break
     end 
     
-    @game_join_records = SingleMinSubmit.where(bid_game_id: params[:game_id]).left_join(:user, id: :submitted_by).select{[submitted_value, submitted_by, user__username]}.order(:submitted_value)
+    @game_join_records = SingleMinSubmit.where(bid_game_id: params[:game_id]).left_join(:user, id: :submitted_by).select{[submitted_value, submitted_by, user__username, single_min_game_submittion__created_at]}.order(:submitted_value)
     
     @game_join_users = SingleMinSubmit.group_and_count(:bid_game_id, :submitted_by).having(bid_game_id: @current_game.id)
 
@@ -203,6 +203,11 @@ end
 get '/login/:redirect_back' do
     @title = "请登录/注册你的账号"
     session['redirect_to'] = '/bid_games/'+params[:redirect_back]
+    erb :login
+end 
+
+get '/login' do
+    @title = "请登录/注册你的账号"
     erb :login
 end 
 

@@ -98,7 +98,7 @@
     <tr>
       <td><%= record.submitted_value %></td>
       <td><%= record[:username] %></td> <!-- 不这样写就取不到 -->
-      <td><%= record.created_at %></td>
+      <td><%= record[:created_at] %></td>
     </tr>
     <% end %>
   </table>
@@ -123,7 +123,7 @@
   </div>
 <% elsif !@current_user then%>
   <p class='text-info'>登录之后可以投注，庄家不可以参与投注哈~~</p>
-  <a id='login_button' class='btn btn-default' role='button' href='/login/5' >登录/注册你的账号</a>
+  <a id='login_button' class='btn btn-default' role='button' href='/login/<%= @current_game.id%>' >登录/注册你的账号</a>
 <% elsif @current_game.status == 2 then%>
   <p class='text-info'>遗憾，游戏已经结束啦~~</p>
   <a id='login_button' class='btn btn-default' role='button' href='/' >参加更多进行中的游戏</a>
