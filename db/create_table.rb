@@ -10,7 +10,7 @@ DB.create_table? :bid_game do
     Int :maximum_player_num #最多参与人数，到达最多参与人数之后会自动把本局游戏结束
     Int :max_bid_num #最多下注次数，到达最多下注次数之后会自动把本局游戏结束
     Int :status, default: 0, null: false
-    String :opened_by
+    Int :opened_by
     Boolean :deleted, default: 0
     DateTime :created_at, default: Sequel::CURRENT_TIMESTAMP
     DateTime :updated_at, default: Sequel::CURRENT_TIMESTAMP

@@ -31,6 +31,10 @@ get '/' do
     redirect '/bid_games' 
 end
 
+get '/app' do 
+    erb :app, :layout => false
+end
+
 
 get '/vote' do 
     @title = "Welcome to Voting Demo!"
@@ -231,9 +235,6 @@ end
 #-----------------用API的方式来实现操作votes--------------------
 
 namespace '/api/v1' do
-    post '/get_token' do
-
-    end
     
     
     get '/votes' do
@@ -242,7 +243,7 @@ namespace '/api/v1' do
         # json = VoteSerializer.new(Vote.all,{ fields:{ vote:[:voted_key] } }).serialized_json
         # json = VoteSerializer.new(Vote.select(:voted_by, :voted_key, :created_at).all).serialized_json
         # json = VoteSerializer.new(Vote.all).serialized_json
-        res = {code: 200, data: {votes:{}}}
+        res = {code: 200, message:{}, data: {votes:{}}}
         res[:data][:votes] = Vote.select(:voted_by, :voted_key, :created_at)
         res = res.to_json
     end
@@ -250,12 +251,117 @@ namespace '/api/v1' do
     
     post '/login_anyway' do
         content_type :json
-        # json = VoteSerializer.new(Vote.all,{ fields:{ vote:[:voted_key] } }).serialized_json
-        # json = VoteSerializer.new(Vote.select(:voted_by, :voted_key, :created_at).all).serialized_json
-        # json = VoteSerializer.new(Vote.all).serialized_json
-        res = {code: 200, data: {votes:{}}}
-        res[:data][:votes] = Vote.select(:voted_by, :voted_key, :created_at)
+
+        res = {code: 200, message:{}, data: {login_user_id:{}}}
+        auth_result = auth_login(params['username'], params['password'])
+        res[:data][:login_user_id] = auth_result[:login_user].id
+        res[:message] = auth_result[:message]
+        res[:token] = auth_result[:token]
+
+        session['current_user'] = auth_result[:login_user].id
+        
         res = res.to_json
     end    
+
+    
+    post '/verify_token' do
+        content_type :json
+        res = {code: 200, message:{}, data: {verify_login_user:{}}}
+        token_res = verify_token(params['user_token'])
+        res[:message] = token_res[:message]
+        res[:data][:verify_login_user] = token_res[:verify_login_user]
+
+        res.to_json
+    end
+
+
+    get '/bid_games' do 
+        content_type :json
+        res = {code: 200, data: {bid_games:{}}}
+        # 分表和别名都得用Symbol的写法
+        res[:data][:bid_games] = BidGame.where(bid_game__deleted: 0)
+        .left_join(:user, id: :opened_by).select{[
+            :bid_game__id___game_id, 
+            :bid_game__name___game_name, 
+            :bid_game__game_info, 
+            :bid_game__type___game_type, 
+            :bid_game__single_bid_fee, 
+            :bid_game__status___game_status, 
+            :bid_game__opened_by___game_owner_id, 
+            :bid_game__created_at___game_created_at, 
+            :user__username, 
+            :user__nickname___user_nickname, 
+            :bid_game__max_bid_num, 
+            :bid_game__maximum_player_num
+            ]}.order(:bid_game__created_at).reverse
+        
+        status 201
+        
+        res.to_json
+    end
+
+
+    get '/bid_game_bid_records' do 
+        content_type :json
+        res = {code: 200, message:{}, data: {my_bids:{}, bid_records:{}}}
+
+        res[:data][:my_bids] = SingleMinSubmit.where(bid_game_id: params[:game_id], submitted_by: session['current_user']).left_join(:user, id: :submitted_by).select{[
+            :single_min_game_submittion__submitted_value, 
+            :single_min_game_submittion__submitted_by___submitted_by_user_id, 
+            :user__username, 
+            :single_min_game_submittion__created_at___submitted_at
+        ]}.order(:submitted_at).reverse
+        
+        # 需要判定给不给所有记录
+        if BidGame.where(id: params[:game_id]).first.status == 2 then 
+            res[:data][:bid_records] = SingleMinSubmit.where(bid_game_id: params[:game_id]).left_join(:user, id: :submitted_by).select{[
+                :single_min_game_submittion__submitted_value, 
+                :single_min_game_submittion__submitted_by___submitted_by_user_id, 
+                :user__username, 
+                :single_min_game_submittion__created_at___submitted_at
+            ]}.order(:submitted_value)
+        else
+            res[:message] = '游戏结束后才会公布所有投注记录哦~'
+        end
+        
+        status 201
+        
+        res.to_json
+    end
+
+    post '/bid_game/join' do
+    
+    end
+
+
+    post '/bid_game/finish' do
+    
+    end
+
+
+    post '/bid_game/create' do
+        content_type :json
+        res = {code: 200, message:{}, data: {created_game:{}}}
+
+        @game_info = params[:game_info]
+        @game_name = params[:game_name]
+        @max_bid_num = params[:max_bid_num]
+        @bid_fee = params[:single_bid_fee]
+        @game_type = params[:game_type]
+        @user_token = params['user_token']
+
+        res[:message] = session['current_user']
+
+        #判定是否已经正常登录
+        # if session['current_user'] then 
+        #     #创建游戏 
+        #     res[:data][:created_game] = BidGame.new(type: @game_type, name: @game_name, game_info: @game_info, max_bid_num: @max_bid_num, single_bid_fee: @bid_fee, opened_by: session['current_user']).game_start.save
+        # else 
+        #     res[:message] = "登录之后才可以创建游戏哦~"
+        # end
+
+        res.to_json
+    end
+
 end
 

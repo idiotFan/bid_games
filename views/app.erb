@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CW TOYS</title>
+
+    <!-- 引入Element样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+
+  </head>
+  <body>
+    <div id='app' class='container'>
+      <div class='text-center'>
+        <h1> Hello, this is the app rewritten version by vue!</h1>
+        {{message}}
+      </div>
+    </div>
+
+    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> 
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+    <script>
+      var app = new Vue({
+        el: '#app',
+        data: {
+          message: 'Hello，this is vue'
+        }
+      })
+
+      var login_form = new Vue({
+        el: '#login_form',
+        data: {
+          
+        }
+      })
+    </script>
+  </body>
+</html>
+

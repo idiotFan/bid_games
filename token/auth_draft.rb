@@ -1,11 +1,18 @@
-require 'jwt'
+def update_token(user)
+    # 加密原码
+    payload = { user_id: user.id, time: user.created_at}
+    current_token = UserToken.where(user_id: user.id, deleted: 0).first
+    if current_token then 
+        current_token.update(:token => (JWT.encode payload, nil, 'none')).save
+    else 
+        token = JWT.encode payload, nil, 'none'
+        current_token = UserToken.new(user_id: user.id, token: token).save
+    end
 
-def give_token(user)
-
+    return current_token.token
 end
 
 def auth_login(username, password)
-# todo - 实现把所有验证过程都模块化出来
     result = {login_user: nil}
 
     if username then 
@@ -15,11 +22,13 @@ def auth_login(username, password)
             if user.password == password then 
                 result[:login_user] = user
                 result[:message] = '登录成功！'
+                result[:token] = update_token(user)
             else 
                 result[:message] = '密码错误！'
             end     
         elsif password then 
             result[:message] = (result[:login_user] = User.new(username: username, password: password, status: 0, deleted: 0, created_at: Time.now, updated_at: Time.now).save) ? '注册账号成功！': '创建账号失败！'
+            result[:token] = update_token(result[:login_user])
         else 
             result[:message] = '密码不能为空！'
         end
@@ -30,23 +39,20 @@ def auth_login(username, password)
 end
 
 
+def verify_token(token)
+    result = {verify_login_user: nil}
+
+    @token = UserToken.where(token: token).first
+
+    if @token then 
+        #找是不是已经存在这个Token，这里没有做时间自动过期的逻辑
+        result[:verify_login_user] = @token.user_id
+        result[:message] = 'Token有效，无需登录'
+    else
+        result[:message] = '登录已经失效！请重新登录'
+    end  
+    return result
+end
 
 
-payload = { password: 'test' }
-# password_text = 'example'
 
-# IMPORTANT: set nil as password parameter
-token = JWT.encode payload, nil, 'none'
-
-# eyJhbGciOiJub25lIn0.eyJkYXRhIjoidGVzdCJ9.
-puts token
-
-# Set password to nil and validation to false otherwise this won't work
-decoded_token = JWT.decode token, nil, false
-
-# Array
-# [
-#   {"data"=>"test"}, # payload
-#   {"alg"=>"none"} # header
-# ]
-puts decoded_token
