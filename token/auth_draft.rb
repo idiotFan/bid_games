@@ -1,4 +1,5 @@
 def update_token(user)
+    # REVIEW 这个应该写到Model层
     # 加密原码
     payload = { user_id: user.id, time: user.created_at}
     current_token = UserToken.where(user_id: user.id, deleted: 0).first
