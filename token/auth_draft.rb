@@ -1,14 +1,18 @@
 def update_token(user)
     # REVIEW 这个应该写到Model层
-    # 加密原码
-    payload = { user_id: user.id, time: user.created_at}
+    
     current_token = UserToken.where(user_id: user.id, deleted: 0).first
+    # 加密原码
+    payload = { user_id: user.id, time: Time.now}
+
     if current_token then 
-        current_token.update(:token => (JWT.encode payload, nil, 'none')).save
+        current_token.update(:token => (JWT.encode payload, nil, 'none'), updated_at: Time.now).save
     else 
         token = JWT.encode payload, nil, 'none'
         current_token = UserToken.new(user_id: user.id, token: token).save
     end
+
+    
 
     return current_token.token
 end
@@ -17,7 +21,7 @@ def auth_login(username, password)
     result = {login_user: nil}
 
     if username then 
-        #找是不是已经存在这个账户
+        # 验证是不是已经存在这个账户
         user = User.where(username: username).first
         if user then 
             if user.password == password then 
@@ -43,11 +47,13 @@ end
 def verify_token(token)
     result = {verify_login_user: nil}
 
-    @token = UserToken.where(token: token).first
+    @token = UserToken.where(token: token).left_join(:user, id: :user_id).select{[:user__id___user_id, :user__username, :user__nickname]}.first
 
     if @token then 
         #找是不是已经存在这个Token，这里没有做时间自动过期的逻辑
         result[:verify_login_user] = @token.user_id
+        result[:verify_username] = @token[:username]
+        result[:verify_nickname] = @token[:nickname]
         result[:message] = 'Token有效，无需登录'
     else
         result[:message] = '登录已经失效！请重新登录'

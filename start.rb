@@ -251,9 +251,13 @@ namespace '/api/v1' do
     
     post '/login_anyway' do
         content_type :json
+        # puts '------' + params['username'] + '--' + params['password'] + '------'
+
+        request.body.rewind  # 要从这里取Body里面的参数，否则直接取params的参数会取不到
+        req_data = JSON.parse request.body.read
 
         res = {code: 200, message:{}, data: {login_user_id:{}}}
-        auth_result = auth_login(params['username'], params['password'])
+        auth_result = auth_login(req_data['username'], req_data['password'])
         res[:data][:login_user_id] = auth_result[:login_user].id
         res[:message] = auth_result[:message]
         res[:token] = auth_result[:token]
@@ -266,16 +270,22 @@ namespace '/api/v1' do
     
     post '/verify_token' do
         content_type :json
-        res = {code: 200, message:{}, data: {verify_login_user:{}}}
-        token_res = verify_token(params['user_token'])
+
+        request.body.rewind  # 要从这里取Body里面的参数，否则直接取params的参数会取不到
+        req_data = JSON.parse request.body.read
+
+        res = {code: 200, message:{}, verify_login_user:{}}
+        token_res = verify_token(req_data['user_token'])
         res[:message] = token_res[:message]
-        res[:data][:verify_login_user] = token_res[:verify_login_user]
+        res[:verify_login_user] = token_res[:verify_login_user]
+        res[:verify_username] = token_res[:verify_username]
 
         res.to_json
     end
 
 
     get '/bid_games' do 
+        @user_token = params[:user_token]
         content_type :json
         res = {code: 200, data: {bid_games:{}}}
         # 分表和别名都得用Symbol的写法

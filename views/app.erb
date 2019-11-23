@@ -2,40 +2,115 @@
 <html>
   <head>
     <meta charset='UTF-8' />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>CW TOYS</title>
-
-    <!-- 引入Element样式 -->
-    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 在 head 标签中添加 meta 标签，并设置 viewport-fit=cover 值，适配底部安全区 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover">    
+    <title>Bid游戏厅</title>
+    
+    <!-- 引入样式文件 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vant@2.2/lib/index.css">
 
   </head>
   <body>
-    <div id='app' class='container'>
-      <div class='text-center'>
-        <h1> Hello, this is the app rewritten version by vue!</h1>
-        {{message}}
-      </div>
+    <div id='login_form' v-if='isVisible'>
+        <h4> Hello, this is the bid app rewritten version by vue!</h4>
+        <van-cell-group>
+            <van-field v-model='params.username' type='text' label='用户名' required placeholder='请输入用户名'></van-field>
+            <van-field v-model='params.password' type='password' label='密码' required placeholder='请输入密码'></van-field>
+        </van-cell-group>
+        <van-button v-on:click="getToken" type='primary' size='normal'>登录账号，获取Token</van-button>
+    </div>
+
+    <div id='bid_games' v-if='isVisible'> 
+        <p>{{bid_game_overview}}</p>
+    </div>
+
+    <div id='user_status' v-if='isVisible'> 
+        <p>{{message}}</p>
     </div>
 
     <!-- 开发环境版本，包含了有帮助的命令行警告 -->
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> 
-    <!-- 引入组件库 -->
-    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <!-- 引入Vant组件库 -->
+    <script src="https://cdn.jsdelivr.net/npm/vant@2.2/lib/vant.min.js"></script>
 
     <script>
-      var app = new Vue({
-        el: '#app',
-        data: {
-          message: 'Hello，this is vue'
-        }
-      })
+        var login_form = new Vue({
+            el: '#login_form',
+            data: {
+                isVisible: false,
+                isTokenWork: false,
+                user_token: localStorage.getItem('user_token'),
+                params: { username: '', password: ''}
+            },
+            methods: {
+                getToken: function () {
+                    get_token_url = 'http://localhost:8080/api/v1/login_anyway'
+                    const response = fetch(get_token_url, {
+                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                        cache: 'reload', // *default, no-cache, reload, force-cache, only-if-cached
+                        headers: {
+                        'Content-Type': 'application/json'
+                        // 'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: JSON.stringify(this.params) // body data type must match "Content-Type" header
+                    }).then(response => response.json()).then(data => {
+                        console.log(data)
+                        // this.user_token = data.token
+                        localStorage.setItem('user_token', data.token)
+                    })
+                },
+                verifyToken: function () {
+                    verify_token_url = 'http://localhost:8080/api/v1/verify_token'
+                    req = {'user_token': this.user_token}
+                    console.log(this.user_token)
+                    const response = fetch(verify_token_url, {
+                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                        cache: 'reload', // *default, no-cache, reload, force-cache, only-if-cached
+                        headers: {
+                        'Content-Type': 'application/json'
+                        // 'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: JSON.stringify(req) // body data type must match "Content-Type" header
+                    }).then(response => response.json()).then(data => {
+                        console.log(data)
+                        this.isTokenWork = data.verify_login_user
+                    })
+                }
+            },
+            created() {
+                if (this.user_token){
+                    this.verifyToken()
+                }
+            }
+        })
 
-      var login_form = new Vue({
-        el: '#login_form',
-        data: {
-          
-        }
-      })
+        var bid_games = new Vue({
+            el: '#bid_games',
+            data:{
+                isVisible: true,
+                bid_games: [],
+                bid_game_overview: '这里是bid_games展示Panel List'
+            },
+            methods: {
+
+            }
+        })
+
+        var user_status = new Vue({
+            el: '#user_status',
+            data:{
+                isVisible: true,
+                current_username: '',
+                current_nick_name: '',
+                message: '尚未登录'
+            },
+            methods: {
+
+            },
+            created() {
+                this.isVisible = !login_form.isTokenWork
+            }
+        })
     </script>
   </body>
 </html>
