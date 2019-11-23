@@ -20,7 +20,7 @@ end
 def auth_login(username, password)
     result = {login_user: nil}
 
-    if username then 
+    if username.size >= 6 then 
         # 验证是不是已经存在这个账户
         user = User.where(username: username).first
         if user then 
@@ -38,7 +38,7 @@ def auth_login(username, password)
             result[:message] = '密码不能为空！'
         end
     else
-        result[:message] = '账号名/邮箱/手机号不能为空！'
+        result[:message] = '账号名/邮箱/手机号必须至少大于5位！'
     end  
     return result
 end

@@ -258,11 +258,13 @@ namespace '/api/v1' do
 
         res = {code: 200, message:{}, data: {login_user_id:{}}}
         auth_result = auth_login(req_data['username'], req_data['password'])
-        res[:data][:login_user_id] = auth_result[:login_user].id
+        if auth_result[:login_user] then 
+            res[:data][:login_user_id] = auth_result[:login_user][:id] 
+        end
         res[:message] = auth_result[:message]
         res[:token] = auth_result[:token]
 
-        session['current_user'] = auth_result[:login_user].id
+        # session['current_user'] = auth_result[:login_user][:id]
         
         res = res.to_json
     end    
