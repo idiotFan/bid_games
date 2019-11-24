@@ -238,8 +238,6 @@ namespace '/api/v1' do
         end
         res[:message] = auth_result[:message]
         res[:token] = auth_result[:token]
-
-        # session['current_user'] = auth_result[:login_user][:id]
         
         res = res.to_json
     end    
@@ -306,7 +304,6 @@ namespace '/api/v1' do
         request.body.rewind  # 要从这里取Body里面的参数，否则直接取params的参数会取不到
         req_data = JSON.parse request.body.read
         
-        
         # 返回从Token拿到的当前自己已经投注的记录
         @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
         if @current_user_id then 
@@ -315,7 +312,7 @@ namespace '/api/v1' do
                 :single_min_game_submittion__submitted_by___submitted_by_user_id, 
                 :user__username, 
                 :single_min_game_submittion__created_at___submitted_at
-            ]}.order(:submitted_at).reverse
+            ]}.order(:submitted_value)
         end
         
         # 需要判定给不给所有记录和游戏结果，如果是SINGLE_MIN且游戏未结束则不给
@@ -343,6 +340,7 @@ namespace '/api/v1' do
         res.to_json
     end
 
+
     post '/bid_game/join' do
 
         content_type :json
@@ -350,31 +348,61 @@ namespace '/api/v1' do
             code: 200, 
             message:{}, 
             data: {
-                    just_bids:{}
+                    just_bids:{},
+                    just_bids_num:{}
             }
         }
 
         request.body.rewind  # 要从这里取Body里面的参数，否则直接取params的参数会取不到
         req_data = JSON.parse request.body.read
 
-        if req_data['user_token'] && req_data['game_id'] then 
+        @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
+        @current_game = BidGame.where(id: req_data['game_id']).first
+        @bid_values = req_data['bid_values']
+    
+        if @current_user_id && @current_game && @bid_values.length > 0 then 
+            
             # 返回从Token拿到的当前自己已经投注的记录
-            @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
-            @current_game = BidGame.where(id: req_data['game_id']).first
-            @bid_values = req_data['bid_values']
             @just_bids = @current_game.join_bid(@current_user_id, @bid_values)
             res[:message] = "成功投注了#{@just_bids.length}个值"
-            res[:just_bids] = @just_bids
+            res[:data][:just_bids] = @just_bids
+            res[:data][:just_bids_num] = @just_bids.length
+
         else 
-            res[:data][:message] = '需要先登录哦~'
+            res[:data][:message] = '参数不合法哈~~'
         end
-        
+
+        status 201
         res.to_json
     end
 
 
     post '/bid_game/finish' do
-    
+        content_type :json
+        res = {
+            code: 200, 
+            message:{}, 
+            data: {
+                    finished_games:{}
+            }
+        }
+
+        request.body.rewind  # 要从这里取Body里面的参数，否则直接取params的参数会取不到
+        req_data = JSON.parse request.body.read
+
+        @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
+        @current_game = BidGame.where(id: req_data['game_id']).first
+
+        if @current_game.opened_by == @current_user_id then 
+            @current_game.game_close.save
+            res[:message] = "已成功结束游戏：#{@current_game.name}"
+            res[:data][:finished_games] = @current_game
+        else
+            res[:code] = 304
+            res[:message] = "只有庄家可以直接结束自己的游戏!"
+        end
+        status 201
+        res.to_json
     end
 
 
@@ -391,6 +419,9 @@ namespace '/api/v1' do
         @bid_fee = req_data['single_bid_fee']
         @game_type = req_data['game_type']
         @user_token = req_data['user_token']
+
+        # REVIEW 需要根据不同的游戏类型来校验提交的参数
+        @game_type = req_data['game_type']
         
         @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
 
@@ -402,7 +433,7 @@ namespace '/api/v1' do
         else 
             res[:message] = "登录之后才可以创建游戏哦~"
         end
-
+        status 201
         res.to_json
     end
 

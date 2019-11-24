@@ -25,7 +25,7 @@
     </div>
 
     <div id='user_status' v-if='isVisible'> 
-        <p>{{message}}</p>
+        <p>已登录：{{current_username}}</p>
     </div>
     <div id='new_game_creater' v-if='isVisible'>
     <div>
@@ -39,10 +39,7 @@
         var login_form = new Vue({
             el: '#login_form',
             data: {
-                isVisible: true,
-                isTokenWork: false,
-                // cannotSubmit: true,
-                user_token: localStorage.getItem('user_token'),
+                isVisible: false,
                 params: { username: '', password: ''}
             },
             methods: {
@@ -60,31 +57,19 @@
                         console.log(data)
                         // this.user_token = data.token
                         localStorage.setItem('user_token', data.token)
-                        vant.Toast(data.message);
+                        if (data.token) {
+                            vant.Toast(data.message);
+                            vant.Notify({ type: 'success', message: data.message });
+                            this.isVisible = false
+                        } else {
+                            vant.Toast(data.message);
+                            vant.Notify({ type: 'warning', message: data.message });
+                        }
                     })
                 },
-                verifyToken: function () {
-                    verify_token_url = 'http://localhost:8080/api/v1/verify_token'
-                    req = {'user_token': this.user_token}
-                    console.log(this.user_token)
-                    const response = fetch(verify_token_url, {
-                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-                        cache: 'reload', // *default, no-cache, reload, force-cache, only-if-cached
-                        headers: {
-                        'Content-Type': 'application/json'
-                        // 'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: JSON.stringify(req) // body data type must match "Content-Type" header
-                    }).then(response => response.json()).then(data => {
-                        console.log(data)
-                        this.isTokenWork = data.verify_login_user
-                    })
-                }
             },
             created() {
-                if (this.user_token){
-                    this.verifyToken()
-                }
+
             },
             computed: {
                 cannotSubmit: function () { 
@@ -109,15 +94,35 @@
             el: '#user_status',
             data:{
                 isVisible: true,
-                current_username: '',
+                isTokenWork: false,
+                user_token: localStorage.getItem('user_token'),
+                current_username: '尚未登录',
                 current_nick_name: '',
-                message: '尚未登录'
             },
             methods: {
-
+                 verifyToken: function () {
+                    verify_token_url = 'http://localhost:8080/api/v1/verify_token'
+                    req = {'user_token': this.user_token}
+                    console.log(this.user_token)
+                    const response = fetch(verify_token_url, {
+                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                        cache: 'reload', // *default, no-cache, reload, force-cache, only-if-cached
+                        headers: {
+                        'Content-Type': 'application/json'
+                        // 'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: JSON.stringify(req) // body data type must match "Content-Type" header
+                    }).then(response => response.json()).then(data => {
+                        console.log(data)
+                        this.isTokenWork = data.verify_login_user
+                        this.current_username = data.verify_username
+                    })
+                }
             },
             created() {
-                this.isVisible = !login_form.isTokenWork
+                if (this.user_token){
+                    this.verifyToken()
+                }
             }
         })
     </script>
