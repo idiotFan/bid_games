@@ -13,8 +13,4 @@ class User < Sequel::Model(DB[:user])
     self.password_hash = @password
   end
 
-  def create_new_user(login_id, password)
-    #todo: 处理判断login_id的类型，并且加入一些默认的值进去
-  end
-
 end

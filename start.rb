@@ -150,34 +150,9 @@ post '/bid_games/:game_id/join' do
     # 'Thanks for your bids!'
     @current_user = User.where(id: session['current_user']).first
     @current_game = BidGame.where(id: params[:game_id]).first
-    @bid_values = params[:bid_values].split(',') - ['0']
-    if @current_user && @current_game.status == 1 then 
-        @bid_values.each_with_index do |value, index|
-            # 这里需要校验用户是否已经投过这个值，如果已经投过就自动过滤
-            @whether_sumitted = SingleMinSubmit.where(bid_game_id: @current_game.id, submitted_by: @current_user.id,  submitted_value: value, deleted: 0).first
-            if !@whether_sumitted then 
-                @bid_submit = SingleMinSubmit.new(bid_game_id: @current_game.id, submitted_value: value, submitted_by: @current_user.id).save 
-            end
-        end
-
-        # 触发达到人数就自动结束的逻辑
-        @game_join_users = SingleMinSubmit.group_and_count(:bid_game_id, :submitted_by).having(bid_game_id: @current_game.id)
-        if  @current_game.maximum_player_num && @current_game.maximum_player_num <= @game_join_users.count then
-            @current_game.game_close.save
-        end
-
-        # 触发达到投注次数就自动结束的逻辑
-        @game_bid_num = SingleMinSubmit.where(bid_game_id: @current_game.id).count(:id)
-        if  @current_game.max_bid_num && @current_game.max_bid_num <= @game_bid_num then
-            @current_game.game_close.save
-        end
-
-    elsif !@current_user then
-        session['redirect_to'] = "/bid_games/#{@current_game.id}"
-        redirect '/login'
-    elsif @current_game.status == 2 then
-        "遗憾，游戏已经结束啦"
-    end
+    
+    @bid_values = params[:bid_values]
+    @current_game.join_bid(@current_user.id, @bid_values)
     
     redirect "/bid_games/#{@current_game.id}"
 end
@@ -193,7 +168,7 @@ get '/bid_games/:game_id/finish' do
         session['redirect_to'] = "/bid_games/#{@current_game.id}"
         redirect '/login'
     elsif @current_user.id == @current_game.opened_by.to_i && @current_game.status == 1 then 
-        @current_game.game_close.save
+        @current_game.game_close
     elsif @current_game.status == 2 then
         "遗憾，游戏已经结束啦"
     end
@@ -292,7 +267,7 @@ namespace '/api/v1' do
         res = {code: 200, data: {bid_games:{}}}
         # 分表和别名都得用Symbol的写法
         res[:data][:bid_games] = BidGame.where(bid_game__deleted: 0)
-        .left_join(:user, id: :opened_by).select{[
+        .left_join(Sequel.as(:user, :host), :id => :opened_by).left_join(Sequel.as(:user, :winner), :id => :id).select{[
             :bid_game__id___game_id, 
             :bid_game__name___game_name, 
             :bid_game__game_info, 
@@ -301,10 +276,13 @@ namespace '/api/v1' do
             :bid_game__status___game_status, 
             :bid_game__opened_by___game_owner_id, 
             :bid_game__created_at___game_created_at, 
-            :user__username, 
-            :user__nickname___user_nickname, 
+            :bid_game__winner_id___game_winner_id,
+            :host__username___host_username, 
+            :host__nickname___host_nickname, 
             :bid_game__max_bid_num, 
-            :bid_game__maximum_player_num
+            :bid_game__maximum_player_num,
+            :bid_game__winner_id,
+            :winner__username___winnner_username
             ]}.order(:bid_game__created_at).reverse
         
         status 201
@@ -313,27 +291,51 @@ namespace '/api/v1' do
     end
 
 
-    get '/bid_game_bid_records' do 
+    post '/bid_game_detail' do 
         content_type :json
-        res = {code: 200, message:{}, data: {my_bids:{}, bid_records:{}}}
+        res = {
+            code: 200, 
+            message:{}, 
+            data: {
+                    my_bids:{}, 
+                    whole_bid_records:{}, 
+                    game_result:{}
+            }
+        }
 
-        res[:data][:my_bids] = SingleMinSubmit.where(bid_game_id: params[:game_id], submitted_by: session['current_user']).left_join(:user, id: :submitted_by).select{[
-            :single_min_game_submittion__submitted_value, 
-            :single_min_game_submittion__submitted_by___submitted_by_user_id, 
-            :user__username, 
-            :single_min_game_submittion__created_at___submitted_at
-        ]}.order(:submitted_at).reverse
+        request.body.rewind  # 要从这里取Body里面的参数，否则直接取params的参数会取不到
+        req_data = JSON.parse request.body.read
         
-        # 需要判定给不给所有记录
-        if BidGame.where(id: params[:game_id]).first.status == 2 then 
-            res[:data][:bid_records] = SingleMinSubmit.where(bid_game_id: params[:game_id]).left_join(:user, id: :submitted_by).select{[
+        
+        # 返回从Token拿到的当前自己已经投注的记录
+        @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
+        if @current_user_id then 
+            res[:data][:my_bids] = SingleMinSubmit.where(bid_game_id: req_data['game_id'], submitted_by:  @current_user_id).left_join(:user, id: :submitted_by).select{[
+                :single_min_game_submittion__submitted_value, 
+                :single_min_game_submittion__submitted_by___submitted_by_user_id, 
+                :user__username, 
+                :single_min_game_submittion__created_at___submitted_at
+            ]}.order(:submitted_at).reverse
+        end
+        
+        # 需要判定给不给所有记录和游戏结果，如果是SINGLE_MIN且游戏未结束则不给
+        @current_game = BidGame.where(id: req_data['game_id']).first
+        if @current_game[:status] == 2 && @current_game[:type] == 'SINGLE_MIN' then 
+            res[:data][:whole_bid_records] = SingleMinSubmit.where(bid_game_id: req_data['game_id']).left_join(:user, id: :submitted_by).select{[
                 :single_min_game_submittion__submitted_value, 
                 :single_min_game_submittion__submitted_by___submitted_by_user_id, 
                 :user__username, 
                 :single_min_game_submittion__created_at___submitted_at
             ]}.order(:submitted_value)
+            
+            # 如果游戏是结束状态，返回最新的当前结果
+            
+            if @atari then 
+                @final_winner_submit = SingleMinSubmit.where(bid_game_id: params[:game_id], submitted_value: @atari.submitted_value).first
+                @final_winner = User.where(id: @final_winner_submit.submitted_by).first
+            end
         else
-            res[:message] = '游戏结束后才会公布所有投注记录哦~'
+            res[:message] = '最小唯一数类的游戏结束后才会公布所有投注记录哦~'
         end
         
         status 201
@@ -342,7 +344,32 @@ namespace '/api/v1' do
     end
 
     post '/bid_game/join' do
-    
+
+        content_type :json
+        res = {
+            code: 200, 
+            message:{}, 
+            data: {
+                    just_bids:{}
+            }
+        }
+
+        request.body.rewind  # 要从这里取Body里面的参数，否则直接取params的参数会取不到
+        req_data = JSON.parse request.body.read
+
+        if req_data['user_token'] && req_data['game_id'] then 
+            # 返回从Token拿到的当前自己已经投注的记录
+            @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
+            @current_game = BidGame.where(id: req_data['game_id']).first
+            @bid_values = req_data['bid_values']
+            @just_bids = @current_game.join_bid(@current_user_id, @bid_values)
+            res[:message] = "成功投注了#{@just_bids.length}个值"
+            res[:just_bids] = @just_bids
+        else 
+            res[:data][:message] = '需要先登录哦~'
+        end
+        
+        res.to_json
     end
 
 
@@ -354,23 +381,27 @@ namespace '/api/v1' do
     post '/bid_game/create' do
         content_type :json
         res = {code: 200, message:{}, data: {created_game:{}}}
+        
+        request.body.rewind  # 要从这里取Body里面的参数，否则直接取params的参数会取不到
+        req_data = JSON.parse request.body.read
 
-        @game_info = params[:game_info]
-        @game_name = params[:game_name]
-        @max_bid_num = params[:max_bid_num]
-        @bid_fee = params[:single_bid_fee]
-        @game_type = params[:game_type]
-        @user_token = params['user_token']
+        @game_info = req_data['game_info']
+        @game_name = req_data['game_name']
+        @max_bid_num = req_data['max_bid_num']
+        @bid_fee = req_data['single_bid_fee']
+        @game_type = req_data['game_type']
+        @user_token = req_data['user_token']
+        
+        @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
 
-        res[:message] = session['current_user']
-
-        #判定是否已经正常登录
-        # if session['current_user'] then 
-        #     #创建游戏 
-        #     res[:data][:created_game] = BidGame.new(type: @game_type, name: @game_name, game_info: @game_info, max_bid_num: @max_bid_num, single_bid_fee: @bid_fee, opened_by: session['current_user']).game_start.save
-        # else 
-        #     res[:message] = "登录之后才可以创建游戏哦~"
-        # end
+        # 判定Token是否有效
+        if @current_user_id then 
+            #创建游戏 
+            res[:data][:created_game] = BidGame.new(type: @game_type, name: @game_name, game_info: @game_info, max_bid_num: @max_bid_num, single_bid_fee: @bid_fee, opened_by: @current_user_id).game_start.save
+            res[:message] = "游戏创建成功！"
+        else 
+            res[:message] = "登录之后才可以创建游戏哦~"
+        end
 
         res.to_json
     end

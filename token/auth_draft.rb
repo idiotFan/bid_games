@@ -20,7 +20,7 @@ end
 def auth_login(username, password)
     result = {login_user: nil}
 
-    if username.size >= 6 then 
+    if username.size >= 1 then 
         # 验证是不是已经存在这个账户
         user = User.where(username: username).first
         if user then 

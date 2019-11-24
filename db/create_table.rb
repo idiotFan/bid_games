@@ -9,8 +9,11 @@ DB.create_table? :bid_game do
     Float :single_bid_fee, null: false #下注一次的单价
     Int :maximum_player_num #最多参与人数，到达最多参与人数之后会自动把本局游戏结束
     Int :max_bid_num #最多下注次数，到达最多下注次数之后会自动把本局游戏结束
+    Int :bids_number, default: 0, null: false #已经下注的次数
     Int :status, default: 0, null: false
     Int :opened_by
+    Int :final_single_min #最终中奖的数字
+    Int :winner_id
     Boolean :deleted, default: 0
     DateTime :created_at, default: Sequel::CURRENT_TIMESTAMP
     DateTime :updated_at, default: Sequel::CURRENT_TIMESTAMP

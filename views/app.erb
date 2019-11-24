@@ -87,9 +87,8 @@
                 }
             },
             computed: {
-                cannotSubmit: function () {
-                    
-                    return ! (this.params.username.length > 5 && this.params.password.length > 0)
+                cannotSubmit: function () { 
+                    return !(this.params.username.length > 5 && this.params.password.length > 0)
                 }
             }
         })
