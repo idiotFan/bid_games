@@ -393,11 +393,14 @@ namespace '/api/v1' do
         @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
         @current_game = BidGame.where(id: req_data['game_id']).first
 
-        if @current_game.opened_by == @current_user_id then 
+        if @current_game.opened_by == @current_user_id && @current_game.status == 2 then 
             @current_game.game_close.save
             res[:message] = "已成功结束游戏：#{@current_game.name}"
             res[:data][:finished_games] = @current_game
-        else
+        elsif @current_game.opened_by == @current_user_id then 
+            res[:code] = 304
+            res[:message] = "这个游戏已经结束了哦~"
+        elsif @current_game.status == 2 then 
             res[:code] = 304
             res[:message] = "只有庄家可以直接结束自己的游戏!"
         end

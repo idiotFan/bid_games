@@ -90,6 +90,7 @@
             }
         })
 
+
         var user_status = new Vue({
             el: '#user_status',
             data:{
@@ -114,8 +115,10 @@
                         body: JSON.stringify(req) // body data type must match "Content-Type" header
                     }).then(response => response.json()).then(data => {
                         console.log(data)
-                        this.isTokenWork = data.verify_login_user
-                        this.current_username = data.verify_username
+                        if (data.verify_login_user) {
+                            this.isTokenWork = data.verify_login_user
+                            this.current_username = data.verify_username
+                        }
                     })
                 }
             },
