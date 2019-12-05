@@ -263,9 +263,10 @@ namespace '/api/v1' do
         @user_token = params[:user_token]
         content_type :json
         res = {code: 200, data: {bid_games:{}}}
+
         # 分表和别名都得用Symbol的写法
         res[:data][:bid_games] = BidGame.where(bid_game__deleted: 0)
-        .left_join(Sequel.as(:user, :host), :id => :opened_by).left_join(Sequel.as(:user, :winner), :id => :id).select{[
+        .left_join(Sequel.as(:user, :host), :id => :opened_by).left_join(Sequel.as(:user, :winner), :id => :bid_game__winner_id).select{[
             :bid_game__id___game_id, 
             :bid_game__name___game_name, 
             :bid_game__game_info, 
@@ -295,17 +296,40 @@ namespace '/api/v1' do
             code: 200, 
             message:{}, 
             data: {
-                    my_bids:{}, 
-                    whole_bid_records:{}, 
-                    game_result:{}
+                game_detail: {},
+                my_bids:{}, 
+                whole_bid_records:{}
             }
         }
 
         request.body.rewind  # 要从这里取Body里面的参数，否则直接取params的参数会取不到
         req_data = JSON.parse request.body.read
 
+        @current_game = BidGame.where(id: req_data['game_id']).first
+
+        # 返回game的基本信息
+        if @current_game then 
+            res[:data][:game_detail] = BidGame.where(bid_game__id: req_data['game_id'])
+            .left_join(Sequel.as(:user, :host), :id => :opened_by).left_join(Sequel.as(:user, :winner), :id => :bid_game__winner_id).select{[
+                :bid_game__id___game_id, 
+                :bid_game__name___game_name, 
+                :bid_game__game_info, 
+                :bid_game__type___game_type, 
+                :bid_game__single_bid_fee, 
+                :bid_game__status___game_status, 
+                :bid_game__opened_by___game_owner_id, 
+                :bid_game__created_at___game_created_at, 
+                :bid_game__winner_id___game_winner_id,
+                :host__username___host_username, 
+                :host__nickname___host_nickname, 
+                :bid_game__max_bid_num, 
+                :bid_game__maximum_player_num,
+                :bid_game__bids_number___game_bids_number,
+                :winner__username___winnner_username
+            ]}.first
+        end
+
         # 暂时只支持了SINGLE_MIN类型的玩法，之后需要根据不同的玩法给出不同的数据。e.g. PRA 
-        
         # 返回从Token拿到的当前自己已经投注的记录
         @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
         if @current_user_id then 
@@ -318,7 +342,6 @@ namespace '/api/v1' do
         end
         
         # 需要判定给不给所有记录和游戏结果，如果是SINGLE_MIN且游戏未结束则不给
-        @current_game = BidGame.where(id: req_data['game_id']).first
         if @current_game[:status] == 2 && @current_game[:type] == 'SINGLE_MIN' then 
             res[:data][:whole_bid_records] = SingleMinSubmit.where(bid_game_id: req_data['game_id']).left_join(:user, id: :submitted_by).select{[
                 :single_min_game_submittion__submitted_value, 
@@ -326,13 +349,6 @@ namespace '/api/v1' do
                 :user__username, 
                 :single_min_game_submittion__created_at___submitted_at
             ]}.order(:submitted_value)
-            
-            # 如果游戏是结束状态，返回最新的当前结果
-            
-            if @atari then 
-                @final_winner_submit = SingleMinSubmit.where(bid_game_id: params[:game_id], submitted_value: @atari.submitted_value).first
-                @final_winner = User.where(id: @final_winner_submit.submitted_by).first
-            end
         else
             res[:message] = '最小唯一数类的游戏结束后才会公布所有投注记录哦~'
         end
