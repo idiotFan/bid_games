@@ -33,9 +33,10 @@ class BidGame < Sequel::Model(DB[:bid_game])
             @bid_values.each_with_index do |value, index|
                 # 这里需要校验用户是否已经投过这个值，如果已经投过就自动过滤
                 @whether_sumitted = SingleMinSubmit.where(bid_game_id: self.id, submitted_by: user_id, submitted_value: value, deleted: 0).first
+
                 if !@whether_sumitted then 
                     @bid_submit = SingleMinSubmit.new(bid_game_id: self.id, submitted_value: value, submitted_by: user_id).save
-                    @just_bids << @bid_submit
+                    @just_had_bids << @bid_submit
                     self.bids_number += 1
                 end
             end

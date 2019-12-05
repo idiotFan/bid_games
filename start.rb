@@ -359,17 +359,25 @@ namespace '/api/v1' do
         @current_user_id = verify_token(req_data['user_token'])[:verify_login_user]
         @current_game = BidGame.where(id: req_data['game_id']).first
         @bid_values = req_data['bid_values']
-    
-        if @current_user_id && @current_game && @bid_values.length > 0 then 
-            
-            # 返回从Token拿到的当前自己已经投注的记录
-            @just_bids = @current_game.join_bid(@current_user_id, @bid_values)
-            res[:message] = "成功投注了#{@just_bids.length}个值"
-            res[:data][:just_bids] = @just_bids
-            res[:data][:just_bids_num] = @just_bids.length
 
+        p @current_user_id.inspect
+        p @current_game.inspect
+        p @bid_values.inspect
+    
+        if @current_user_id then 
+            if @current_user_id && @current_game && @bid_values.length > 0 then 
+                
+                # 返回从Token拿到的当前自己已经投注的记录
+                @just_bids = @current_game.join_bid(@current_user_id, @bid_values)
+                res[:message] = "成功投注了#{@just_bids.length}个值"
+                res[:data][:just_bids] = @just_bids
+                res[:data][:just_bids_num] = @just_bids.length
+
+            else 
+                res[:data][:message] = '参数不合法哈~~'
+            end
         else 
-            res[:data][:message] = '参数不合法哈~~'
+            res[:data][:message] = '用户Token已失效哦~'
         end
 
         status 201
