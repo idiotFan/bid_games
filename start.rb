@@ -408,7 +408,7 @@ namespace '/api/v1' do
         elsif @current_game.opened_by == @current_user_id then 
             res[:code] = 304
             res[:message] = "这个游戏已经结束了哦~"
-        elsif @current_game.status == 2 then 
+        elsif @current_game.status == 1 then 
             res[:code] = 304
             res[:message] = "只有庄家可以直接结束自己的游戏!"
         end
@@ -442,7 +442,7 @@ namespace '/api/v1' do
             res[:data][:created_game] = BidGame.new(type: @game_type, name: @game_name, game_info: @game_info, max_bid_num: @max_bid_num, single_bid_fee: @bid_fee, opened_by: @current_user_id).game_start.save
             res[:message] = "游戏创建成功！"
         else 
-            res[:message] = "登录之后才可以创建游戏哦~"
+            res[:message] = "用户Token已失效哦~"
         end
         status 201
         res.to_json
