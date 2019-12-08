@@ -307,6 +307,8 @@ namespace '/api/v1' do
 
         @current_game = BidGame.where(id: req_data['game_id']).first
 
+        # REVIEW 应该要封装到Model层，支持不同类型的bid game
+
         # 返回game的基本信息
         if @current_game then 
             res[:data][:game_detail] = BidGame.where(bid_game__id: req_data['game_id'])
