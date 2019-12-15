@@ -1,6 +1,7 @@
 require 'sinatra'
 require 'sinatra/reloader'
 require 'sinatra/namespace'
+require 'sinatra/cross_origin'
 
 # require 'kaminari' 
 # require 'aasm'
@@ -21,11 +22,24 @@ require_all 'utils'
 enable :sessions
 set :bind, '0.0.0.0'
 
-# 将server绑定到80端口上，以便能够直接访问
+#设定跨域请求，接受任何来源
+enable :cross_origin
+
+#这个很重要，用来关闭Rack自带的跨域请求保护
+set :protection, :except => [:json_csrf]
+
+#跨域设置的具体参数
+set :allow_origin, :any
+set :allow_methods, [:get, :post, :options]
+set :allow_credentials, true
+set :max_age, "1728000"
+set :expose_headers, ['Content-Type']
+
+# Prod机器需要更改将server绑定到80端口上，以便能够直接访问
 set :port, 8080
 
 register Sinatra::Reloader
-
+register Sinatra::CrossOrigin
 
 get '/' do 
     redirect '/bid_games' 
@@ -207,7 +221,7 @@ post '/login_anyway' do
 end
 
 
-#-----------------用API的方式来实现操作votes--------------------
+#-----------------用API的方式来实现操作Bid游戏厅，提供给前端--------------------
 
 namespace '/api/v1' do
     
@@ -283,8 +297,6 @@ namespace '/api/v1' do
             :bid_game__bids_number___game_bids_number,
             :winner__username___winnner_username
             ]}.order(:bid_game__created_at).reverse
-        
-        status 201
         
         res.to_json
     end
