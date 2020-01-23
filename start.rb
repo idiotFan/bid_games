@@ -28,7 +28,7 @@ enable :cross_origin
 #这个很重要，用来关闭Rack自带的跨域请求保护
 set :protection, :except => [:json_csrf]
 
-#跨域设置的具体参数
+#跨域设置的具体参数，设置成这样的话就可以接受任何客户端的跨域
 set :allow_origin, :any
 set :allow_methods, [:get, :post, :options]
 set :allow_credentials, true
@@ -482,5 +482,148 @@ namespace '/api/v1' do
         res.to_json
     end
 
+
+    #----------------- 要实现的API --------------------
+
+
+    # 获取所有 Travel Plans 的粗略信息
+    get '/travel_plans' do 
+        content_type :json
+        res = {
+            code: 200, 
+            message: '下一次是去这里呢~', 
+            sum: {
+                plan_ended: 9
+            },
+            data: {
+                travel_plans:[
+                    {
+                        id:'',
+                        title: '第一次冲绳跨年',
+                        my_note: '随便记点什么记点什么blahblah',
+                        status: 1,
+                        regions: ["JAPAN", "SOUTH_KOREA"],
+                        start_date: '2019-12-28',
+                        end_date: '2020-01-01',
+                        luggage:{
+                            estimated_filled: 13,
+                            flight_max: 23
+                        },
+                        estimated_time_taken: 6.5,
+                        estimated_money: 25433,
+                        shopping_nodes:[
+                            {
+                                id:'',
+                                name: 'Bic Camera · 大型综合电器商场',
+                                original_name: '',
+                                location: '',
+                                my_note: '去购买KK的保温杯、CW姐夫的iPad Pro还有Lupicia的茶叶，手机等等等别的东西',
+                                complete_at_date: '2019-12-29'
+                            },
+                            {
+                                id:'',
+                                name: '三A百货 · 综合商场',
+                                original_name: '',
+                                location: '',
+                                my_note: '购买HABA的精油购买、资生堂的福袋、购买HABA的精油购买HABA的精油购买HABA的精油购买HABA的精油',
+                                complete_at_date: '2019-12-29'
+                            },
+                            {
+                                id:'',
+                                name: 'DFS那霸新都心店',
+                                original_name: '',
+                                location: '',
+                                my_note: '购买Coach的包包、各种高级美妆，像是CPB等等等等，其他东西，还有iQos的烟弹',
+                                complete_at_date: '2019-12-30'
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        
+        status 200
+
+        res.to_json
+    end
+
+
+    # 根据ID获取一个Travel Plan的详情
+    post '/travel_plan' do 
+        content_type :json
+        
+        request.body.rewind
+        req_data = JSON.parse request.body.read
+        
+        res = {
+            code: 200, 
+            message: '获取成功', 
+            data: {
+                travel_plan:{
+                    title: '第一次冲绳跨年',
+                    my_note: '随便记点什么记点什么blahblah',
+                    status: 1,
+                    regions: ["JAPAN", "SOUTH_KOREA"],
+                    start_date: '2019-12-28',
+                    end_date: '2020-01-01',
+                    luggage:{
+                        estimated_filled: 13,
+                        flight_max: 23
+                    },
+                    sum: {
+                        s_nodes: 9,
+                        b_nodes: 10,
+                        purchase_amount: 25000,
+                    },
+                    estimated_time_taken: 6.5,
+                    estimated_money: 25433,
+                    shopping_nodes:[
+                        {
+                            id:'',
+                            name: 'Bic Camera · 大型综合电器商场',
+                            original_name: '',
+                            location: '',
+                            my_note: '去购买KK的保温杯、CW姐夫的iPad Pro还有Lupicia的茶叶，手机等等等别的东西',
+                            complete_at_date: '2019-12-29'
+                        },
+                        {
+                            id:'',
+                            name: '三A百货 · 综合商场',
+                            original_name: '',
+                            location: '',
+                            my_note: '购买HABA的精油购买、资生堂的福袋、购买HABA的精油购买HABA的精油购买HABA的精油购买HABA的精油',
+                            complete_at_date: '2019-12-29'
+                        },
+                        {
+                            id:'',
+                            name: 'DFS那霸新都心店',
+                            original_name: '',
+                            location: '',
+                            my_note: '购买Coach的包包、各种高级美妆，像是CPB等等等等，其他东西，还有iQos的烟弹',
+                            complete_at_date: '2019-12-30'
+                        }
+                    ],
+                    purchase_bills:[
+                        {
+                            id:'',
+                            pay_time: '2019-12-29 10:30:34',
+                            original_amount: 4500,
+                            original_currency: 'JPY',
+                            default_amount: 300,
+                            default_currency: 'CNY',
+                            bill_images: [
+                                {url: ''},
+                                {url: ''}
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+        
+        status 200
+
+        res.to_json
+    end
 end
 
